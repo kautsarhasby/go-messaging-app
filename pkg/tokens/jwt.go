@@ -17,7 +17,7 @@ type TokenClaims struct {
 
 var TokenType = map[string]time.Duration{
 	"token":        5 * time.Minute,
-	"refreshToken": (2 * time.Minute),
+	"refreshToken": (24 * time.Hour),
 }
 
 func GenerateToken(ctx context.Context, username, fullname string, tokenType string) (string, error) {
