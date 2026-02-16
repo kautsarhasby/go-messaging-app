@@ -233,6 +233,7 @@
         console.log(socket);
         socket.onopen = function (event) {
           console.log("Connected to WebSocket server.");
+          fetchMessageHistory();
           pendingMessages.forEach((message) => {
             socket.send(message);
           });
@@ -285,6 +286,35 @@
 
         const chatBox = document.getElementById("chat-box");
         chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function fetchMessageHistory() {
+        fetch("/messages/v1/history", {
+          method: "GET",
+          headers: {
+            Authorization: `${sessionStorage.getItem("accessToken")}`, // Include JWT token for authorization
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                "Network response was not ok " + response.statusText,
+              );
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Assuming the data format is an array of messages
+            data.data.forEach((message) => {
+              addMessageToChat(message.from, message.message); // Function to display messages in chat
+            });
+          })
+          .catch((error) => {
+            console.error(
+              "There was a problem with the fetch operation:",
+              error,
+            );
+          });
       }
 
       // Function to show the dashboard
