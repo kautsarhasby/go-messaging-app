@@ -17,7 +17,7 @@ type TokenClaims struct {
 
 var TokenType = map[string]time.Duration{
 	"token":        5 * time.Minute,
-	"refreshToken": (2 * time.Minute),
+	"refreshToken": (24 * time.Hour),
 }
 
 func GenerateToken(ctx context.Context, username, fullname string, tokenType string) (string, error) {
@@ -50,14 +50,13 @@ func ValidateToken(ctx context.Context, token string) (*TokenClaims, error) {
 			return nil, fmt.Errorf("failed to validate method JWT %v", t.Header["alg"])
 
 		}
-		fmt.Println("secret:", secretKey)
+
 		return secretKey, nil
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse %v", err)
 	}
-	fmt.Println("berhasil lewat")
 
 	claimToken, ok := jwtToken.Claims.(*TokenClaims)
 	if !ok && !jwtToken.Valid {

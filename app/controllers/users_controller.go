@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/kautsarhasby/go-messaging-app/app/models"
 	"github.com/kautsarhasby/go-messaging-app/app/repository"
 	"github.com/kautsarhasby/go-messaging-app/pkg/response"
@@ -12,9 +12,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Register(ctx fiber.Ctx) error {
+func Register(ctx *fiber.Ctx) error {
 	request := new(models.RegisterRequest)
-	err := ctx.Bind().Body(request)
+	err := ctx.BodyParser(request)
 	if err != nil {
 		errResponse := fmt.Errorf("Failed to parse request  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusBadRequest, errResponse.Error(), nil)
@@ -40,7 +40,7 @@ func Register(ctx fiber.Ctx) error {
 		Password: request.Password,
 	}
 
-	err = repository.InsertUser(ctx, user)
+	err = repository.InsertUser(ctx.Context(), user)
 	if err != nil {
 		errResponse := fmt.Errorf("Failed to insert new user: %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusInternalServerError, errResponse.Error(), nil)
@@ -51,16 +51,16 @@ func Register(ctx fiber.Ctx) error {
 	return response.SendSuccessResponse(ctx, res)
 }
 
-func Login(ctx fiber.Ctx) error {
+func Login(ctx *fiber.Ctx) error {
 	request := new(models.LoginRequest)
 	now := time.Now()
-	err := ctx.Bind().Body(request)
+	err := ctx.BodyParser(request)
 	if err != nil {
 		errResponse := fmt.Errorf("Failed to parse request  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusBadRequest, errResponse.Error(), nil)
 	}
 
-	user, err := repository.GetUserByUsername(ctx, request.Username)
+	user, err := repository.GetUserByUsername(ctx.Context(), request.Username)
 	if err != nil {
 		errResponse := fmt.Errorf("Username or Password invalid  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusBadRequest, errResponse.Error(), nil)
@@ -70,13 +70,13 @@ func Login(ctx fiber.Ctx) error {
 		errResponse := fmt.Errorf("Username or Password invalid  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusBadRequest, errResponse.Error(), nil)
 	}
-	token, err := tokens.GenerateToken(ctx, user.Username, user.Fullname, "token")
+	token, err := tokens.GenerateToken(ctx.Context(), user.Username, user.Fullname, "token")
 	if err != nil {
 		errResponse := fmt.Errorf("Failed to generate token  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusBadRequest, errResponse.Error(), nil)
 	}
 
-	refreshToken, err := tokens.GenerateToken(ctx, user.Username, user.Fullname, "refreshToken")
+	refreshToken, err := tokens.GenerateToken(ctx.Context(), user.Username, user.Fullname, "refreshToken")
 	if err != nil {
 		errResponse := fmt.Errorf("Failed to generate token  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusBadRequest, errResponse.Error(), nil)
@@ -89,7 +89,7 @@ func Login(ctx fiber.Ctx) error {
 		TokenExpired:        now.Add(tokens.TokenType["token"]),
 		RefreshTokenExpired: now.Add(tokens.TokenType["refreshToken"]),
 	}
-	if err := repository.InsertUserSession(ctx, userSession); err != nil {
+	if err := repository.InsertUserSession(ctx.Context(), userSession); err != nil {
 		errResponse := fmt.Errorf("Failed to insert user session  %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusInternalServerError, errResponse.Error(), nil)
 	}
@@ -104,26 +104,26 @@ func Login(ctx fiber.Ctx) error {
 	return response.SendSuccessResponse(ctx, resp)
 }
 
-func Logout(ctx fiber.Ctx) error {
+func Logout(ctx *fiber.Ctx) error {
 	token := ctx.Get("Authorization")
-	if err := repository.DeleteUserSessionByToken(ctx, token); err != nil {
+	if err := repository.DeleteUserSessionByToken(ctx.Context(), token); err != nil {
 		errResponse := fmt.Errorf("Failed logout %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusInternalServerError, errResponse.Error(), nil)
 	}
 	return response.SendSuccessResponse(ctx, nil)
 }
 
-func RefreshToken(ctx fiber.Ctx) error {
+func RefreshToken(ctx *fiber.Ctx) error {
 	now := time.Now()
 	refresh_token := ctx.Get("Authorization")
 	username := ctx.Locals("username").(string)
 	fullname := ctx.Locals("fullname").(string)
-	token, err := tokens.GenerateToken(ctx, username, fullname, "token")
+	token, err := tokens.GenerateToken(ctx.Context(), username, fullname, "token")
 	if err != nil {
 		errResponse := fmt.Errorf("Failed to generate token", err)
 		return response.SendFailureResponse(ctx, fiber.StatusInternalServerError, errResponse.Error(), nil)
 	}
-	if err := repository.UpdateUserSessionByToken(ctx, token, refresh_token, now.Add(tokens.TokenType["token"])); err != nil {
+	if err := repository.UpdateUserSessionByToken(ctx.Context(), token, refresh_token, now.Add(tokens.TokenType["token"])); err != nil {
 		errResponse := fmt.Errorf("Failed to update token %v", err)
 		return response.SendFailureResponse(ctx, fiber.StatusInternalServerError, errResponse.Error(), nil)
 	}
