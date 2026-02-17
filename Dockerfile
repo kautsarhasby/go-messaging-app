@@ -1,19 +1,17 @@
-FROM golang:1.25.0-alpine
 
+FROM golang:alpine AS builder
 WORKDIR /app
-
 COPY go.mod go.sum ./
-
-RUN go mod tidy
-
+RUN go mod download
 COPY . .
+RUN CGO_ENABLED=0 go build -o main main.go
 
-RUN go build -o messaging-app
 
-RUN chmod +x messaging-app
-
-EXPOSE 4000
-
-EXPOSE 8080
-
-CMD ["./messaging-app"]
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates tzdata
+WORKDIR /root/
+COPY --from=builder /app/main .
+COPY --from=builder /app/.env . 
+COPY --from=builder /app/views ./views
+EXPOSE 8080 4000
+CMD ["./main"]
