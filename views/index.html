@@ -229,7 +229,8 @@
       }
 
       function setupWebSocket() {
-        socket = new WebSocket("ws://localhost:8080/message/v1/send"); // Replace with your WebSocket server URL
+        const host = window.location.hostname;
+        socket = new WebSocket(`ws://${host}:8080/message/v1/send`); // Replace with your WebSocket server URL
         console.log(socket);
         socket.onopen = function (event) {
           console.log("Connected to WebSocket server.");
