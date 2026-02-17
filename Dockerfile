@@ -11,7 +11,6 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
 COPY --from=builder /app/main .
-COPY --from=builder /app/.env . 
 COPY --from=builder /app/views ./views
 EXPOSE 8080 4000
 CMD ["./main"]
