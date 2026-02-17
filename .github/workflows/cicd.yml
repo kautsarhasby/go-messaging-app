@@ -28,7 +28,8 @@ jobs:
       - name: Delete old docker container
         run: docker rm -f messaging-app
       - name: Running new docker container
-        run: docker run -d \
+        run: |
+          docker run -d \
             -p 8080:8080 -p 4000:4000 \
             --name messaging-app \
             -e DB_HOST=${{ secrets.DB_HOST }} \
